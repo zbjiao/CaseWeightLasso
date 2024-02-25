@@ -25,18 +25,18 @@ ResidLevPlot <- function(X, y, lambda, studentize = TRUE){
   X = centralize(X)
   n = dim(X)[1]
   p = dim(X)[2]
-  
-  result = CookDisLasso(X, y, lambda = lambda, threshold = TRUE, plot = FALSE) 
+
+  result = CookDisLasso(X, y, lambda = lambda, threshold = TRUE, plot = FALSE)
   residy = y - mean(y) - (X%*%result$beta_table)
   X_ = X[,result$beta!=0]
   lev = diag(X_%*%solve(crossprod(X_))%*%t(X_))
-  
+
   if (n<=p){
     denom = 1
   } else{
     denom = sum(lm(y~X)$residual**2)/(n-p-1)*(p+1)
   }
-  
+
   if (studentize){
     df_ = data.frame(index = 1:n, lev = lev, res = residy/sqrt(denom*(1-lev)), Case_Influence = drop(result$CD_Mat))
     ylabel = 'studentized residual'
@@ -45,13 +45,14 @@ ResidLevPlot <- function(X, y, lambda, studentize = TRUE){
     ylabel = 'residual'
   }
   ggplot(data=df_, aes(x=lev, y=res, size=Case_Influence)) +
-    geom_point(aes(color = Case_Influence > result$threshold[1,2])) +  
+    geom_point(aes(color = Case_Influence > result$threshold[1,2])) +
     scale_color_manual(values = c("TRUE" = "red", "F" = "black"), guide = FALSE) +
-    xlab(TeX('leverage')) + 
-    ylab(TeX(ylabel)) + 
+    xlab(TeX('leverage')) +
+    ylab(TeX(ylabel)) +
     geom_hline(yintercept=0, linetype="dashed", color = "gray") +
     theme(panel.background = element_rect(fill = "white"),
           legend.position = 'None',
-          panel.border = element_rect(colour = "black", fill=NA, linewidth=0.5)) 
+          panel.border = element_rect(colour = "black", fill=NA, linewidth=0.5))
+  return(list(influential=which(df_$Case_Influence > result$threshold[1,2])))
 }
 
