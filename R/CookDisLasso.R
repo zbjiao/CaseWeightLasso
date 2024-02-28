@@ -4,14 +4,14 @@ source('../CaseWeightLasso/R/common.R')
 #' Calculate case influence for the lasso and plot Case influence graph
 #' @param X           matrix n by p      design matrix
 #' @param y           vector n by 1      response vector
-#' @param k           number or vector   if only one or a subset of observations are of interest
-#' @param finesse     float <=0.05       how fine the lambda candidate set is
+#' @param k           number or vector   if one or a subset of observations are of interest
+#' @param fineness    float <=0.05       how fine the lambda candidate set is
 #' @param lambda      number or vector   if only one or a subset of penalty parameters are of interest
 #' @param threshold   Boolean            whether to calculate the threshold for influential points
 #' @param plot        Boolean            whether to plot the case influence graph
 #' @return CD_Mat          matrix n by f      matrix of cook's distance at each fraction
 #'         Lambda_list     vector f by 1      a vector of lambdas at each fraction
-#'         fraction        vector f by 1      a vector of fractions based on required finesse
+#'         fraction        vector f by 1      a vector of fractions based on required fineness
 #'         threshold_table matrix f by 2      threshold at each fraction 
 #'         beta_hat_table  matrix p by f      a matrix of betahats at each fraction
 #'         fig        the case influence graph
@@ -22,8 +22,8 @@ source('../CaseWeightLasso/R/common.R')
 #' @details
 #' 1. threshold needs case influence of all observations to calculate. So threshold should be set to False if the functions only calculate 
 #' case influence for a subset of observations,i.e. k is not NULL.\\
-#' 2. finesse automatically chooses a list of lambda candidates from 0 to maximum lambda that penalizes all beta to 0. If lambda candidate 
-#' is pre-specified, i.e. lambda is not NULL, finesse should be set to NULL.
+#' 2. fineness automatically chooses a list of lambda candidates from 0 to maximum lambda that penalizes all beta to 0. If lambda candidate 
+#' is pre-specified, i.e. lambda is not NULL, fineness should be set to NULL.
 #' @examples
 #' library(lars)
 #' data(diabetes)
@@ -31,24 +31,25 @@ source('../CaseWeightLasso/R/common.R')
 #' CookDisLasso(x,y)
 #' detach(diabetes)
 #' 
+#' set.seed(1)
 #' x = matrix(rnorm(50*200),nrow=50)
 #' y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
 #' CookDisLasso(x,y, k=1:10, lambda=c(1,2), threshold = FALSE)
 #' @export
-CookDisLasso <- function(X, y, k = NULL, finesse = NULL, lambda = NULL, threshold = TRUE, plot = TRUE) {
+CookDisLasso <- function(X, y, k = NULL, fineness = NULL, lambda = NULL, threshold = TRUE, plot = TRUE) {
   if (!is.null(k) && threshold) {
     warning("Unable to calculate threshold without all observations.", call. = FALSE)
     threshold = FALSE
   }
-  if (!is.null(lambda) && !is.null(finesse)) {
-    warning("'lambda' and 'finesse' cannot be specified together.", call. = FALSE)
-    finesse = NULL
+  if (!is.null(lambda) && !is.null(fineness)) {
+    warning("'lambda' and 'fineness' cannot be specified together.", call. = FALSE)
+    fineness = NULL
   }
   # if (!is.null(lambda) && plot) {
-  #  warning("plot is not suggested if not using finesse.", call. = FALSE)
+  #  warning("plot is not suggested if not using fineness.", call. = FALSE)
   # }
-  if (is.null(finesse) && is.null(lambda)) {
-    finesse = 0.05
+  if (is.null(fineness) && is.null(lambda)) {
+    fineness = 100
   }
   
   X = centralize(X)
@@ -59,65 +60,28 @@ CookDisLasso <- function(X, y, k = NULL, finesse = NULL, lambda = NULL, threshol
   XX_recorder = list()
   XX_recorder[[paste(rep(0,p),collapse = '')]] = matrix(0,nrow=p,ncol=p)
   
-  lambda_max = log(1+max(abs(t(X)%*%y))*1.001)
+  lambda_max = max(abs(t(X)%*%y))
   
-  if (!is.null(finesse)){
-    # lambda values we take to draw the graph
-    l_list = exp(0:10*(lambda_max/10)) - 1
-    # record the Cook's distance of all data points given lambda
-    
-    l1norm = c()
-    obj = lars(X,y,type='lasso',use.Gram = !(n<p | p>500))
-    ybar = mean(y)
-    
-    l1norm_list = c()
-    beta_hat_table = matrix(nrow = p, ncol = 11)
-    p_list = rep(0,11)
-    for (i in 1:11){
-      lambda = l_list[i]
-      beta_hat = coef(obj,s=lambda,mode='lambda')
-      # beta_hat = as.vector(predict.lars(obj,mode='lambda', s=lambda, type = 'coefficients')$coefficients)
-      beta_hat_table[,i] = beta_hat
-      p_list[i] = sum(beta_hat!=0)
-      l1norm = sum(abs(beta_hat))
-      l1norm_list = c(l1norm_list, l1norm)
+  obj = lars(X,y,type='lasso',use.Gram = !(n<p | p>500))
+  nbeta1 = drop(abs(obj$beta) %*% rep(1, p))
+  ybar = mean(y)
+  beta_hat_table = c()
+  if (!is.null(fineness)){
+    fraction = seq(0.99,0,length.out=fineness)
+    for (f in fraction){
+      beta_hat = as.vector(predict.lars(obj,mode='fraction', s=f, type = 'coefficients')$coefficients)
+      beta_hat_table = cbind(beta_hat_table, beta_hat)
     }
-    fraction = as.numeric(l1norm_list)/l1norm_list[1]
-    fraction_dif = fraction[1:10] - fraction[2:11]
-    while(max(fraction_dif)>finesse){
-      ind = which(fraction_dif == max(fraction_dif))[1]
-      new_l = (l_list[ind] + l_list[ind+1])/2
-      l_list = c(l_list[1:ind], new_l, l_list[(ind+1):length(l_list)])
-      beta_hat = coef(obj,s=new_l, mode='lambda')
-      # beta_hat = as.vector(predict.lars(obj,mode='lambda', s=new_l, type = 'coefficients')$coefficients)
-      beta_hat_table = cbind(beta_hat_table[,1:ind],beta_hat,beta_hat_table[,(ind+1):(length(l_list)-1)])
-      p_list = c(p_list[1:ind], sum(beta_hat!=0), p_list[(ind+1):length(p_list)])
-      l = length(l_list)
-      fraction = c(fraction[1:ind], sum(abs(beta_hat))/l1norm_list[1], fraction[(ind+1):length(fraction)])
-      fraction_dif = fraction[1:(l-1)] - fraction[2:l]
-    }
+    nbeta2 = drop(rep(1, p) %*% abs(beta_hat_table))
+    l_list = approx(nbeta1, c(obj$lambda,0), xout = nbeta2)$y
   } else
   {    
     l_list = sort(lambda[lambda<lambda_max])
-
-    # record the Cook's distance of all data points given lambda
-    l1norm = c()
-    obj = lars(X,y,type='lasso',use.Gram = !(n<p | p>500))
-    ybar = mean(y)
-    
-    l1norm_list = c()
-    beta_hat_table = matrix(nrow = p, ncol = length(l_list))
-    p_list = rep(0,length(l_list))
-    for (i in 1:length(l_list)){
-      lambda = l_list[i]
-      beta_hat = coef(obj,s=lambda,mode='lambda')
-      # beta_hat = as.vector(predict.lars(obj,mode='lambda', s=lambda, type = 'coefficients')$coefficients)
-      beta_hat_table[,i] = beta_hat
-      p_list[i] = sum(beta_hat!=0)
-      l1norm = sum(abs(beta_hat))
-      l1norm_list = c(l1norm_list, l1norm)
+    for (l in l_list){
+      beta_hat = as.vector(predict.lars(obj,mode='lambda', s=l, type = 'coefficients')$coefficients)
+      beta_hat_table = cbind(beta_hat_table, beta_hat)
     }
-    fraction = as.numeric(l1norm_list)/sum(abs(coef(obj,s=0,mode='lambda')))
+    fraction = approx(c(obj$lambda,0), nbeta1/nbeta1[length(nbeta1)], xout = l_list)$y
   }
   
   CD_Mat = c()
@@ -138,7 +102,7 @@ CookDisLasso <- function(X, y, k = NULL, finesse = NULL, lambda = NULL, threshol
   if (0 %in% l_list){
     starter = 2
     if (n<=p){
-      cd0 = rep(0,length(indices_vec))
+      cd0 = rep(NA,length(indices_vec))
     } else{
       cd0 = cooks.distance(lm(y~X))[indices_vec]
     }
@@ -174,6 +138,15 @@ CookDisLasso <- function(X, y, k = NULL, finesse = NULL, lambda = NULL, threshol
     
     CD_list = c()
     
+    # print(c(k,n,K))
+    A = s_backup!=0
+    if (sum(A)==1){
+      y_tilde = X[,A]*beta_hat_backup[A] + ybar
+    } 
+    else{
+      y_tilde = X[,A]%*%beta_hat_backup[A] + ybar
+    }
+    
     for (k in indices_vec){
       beta_hat = beta_hat_backup
       s = s_backup
@@ -187,14 +160,14 @@ CookDisLasso <- function(X, y, k = NULL, finesse = NULL, lambda = NULL, threshol
       yk_hat = drop(ybar + X[k,A] %*% beta_hat[A])
       
       # beta path records beta hat's value at each breakpoint
-      beta_path = c(beta_hat)
+      # beta_path = c(beta_hat)
       # and sign change
-      s_path = c(s)
+      # s_path = c(s)
       # and omega value at each breakpoint
-      hkk_path = c()
+      # hkk_path = c()
       w = 1
       while (T){
-        hkk_path = c(hkk_path, hk[k])
+        # hkk_path = c(hkk_path, hk[k])
         xi = get_xi(w, hk[k], n)
         bias = yk_hat - y[k]
         if (sum(A) == 0){
@@ -228,15 +201,16 @@ CookDisLasso <- function(X, y, k = NULL, finesse = NULL, lambda = NULL, threshol
         if (sum(A) > 0){
           beta_hat[A] = beta_hat[A] + min(get_xi(0,hk[k],n),xi_cand0)*slope_beta
         }
-        beta_path = rbind(beta_path, beta_hat)
+        # beta_path = rbind(beta_path, beta_hat)
         beta_hat0 = ybar + min(get_xi(0,hk[k],n),xi_cand0) * bias/n
         
         # if the xi is off the bound, stop the algorithm
         # print(get_xi(0,hk[k],n))
         # print(beta_hat[A])
+        
         if (xi_cand0 > get_xi(0,hk[k],n)){
-          hkk_path = c(hkk_path, hk[k])
-          s_path = rbind(s_path, s)
+          # hkk_path = c(hkk_path, hk[k])
+          # s_path = rbind(s_path, s)
           break
         }
         # if not, locate the covariate (go to or leave the active set)
@@ -247,9 +221,10 @@ CookDisLasso <- function(X, y, k = NULL, finesse = NULL, lambda = NULL, threshol
           s[coef] = 0
           # check if active set is empty 
           if (sum(A) == 0){
-            hkk_path = c(hkk_path, 0, 0)
-            s_path = rbind(s_path, s, s)
-            beta_path = rbind(beta_path, beta_hat)
+            hk[k] = 0
+            # hkk_path = c(hkk_path, 0, 0)
+            # s_path = rbind(s_path, s, s)
+            # beta_path = rbind(beta_path, beta_hat)
             break
           }
         }
@@ -266,7 +241,7 @@ CookDisLasso <- function(X, y, k = NULL, finesse = NULL, lambda = NULL, threshol
           s[coef] = -1
         }
         
-        s_path = rbind(s_path, s)
+        # s_path = rbind(s_path, s)
         # update omega, XX, beta_hat, d_hat
         w = get_w(xi_cand0, hk[k], n)
         A_id = paste(A*1,collapse = '')
@@ -289,26 +264,16 @@ CookDisLasso <- function(X, y, k = NULL, finesse = NULL, lambda = NULL, threshol
       }
       
       #--------------------
-      
-      K = length(hkk_path)
-      # print(c(k,n,K))
-      A = s_path[1,]!=0
-      if (sum(A)==1){
-        y_tilde = X[,A]*beta_path[1,A] + ybar
-      } 
-      else{
-        y_tilde = X[,A]%*%beta_path[1,A] + ybar
-      }
-      
-      A = s_path[K,]!=0
+    
+      A = s!=0
       A_id = paste(A*1,collapse = '')
       if (sum(A) == 0){
-        y_last = ybar + get_xi(0, hkk_path[K], n)*1/n*(ybar - y[k])
+        y_last = ybar + get_xi(0, hk[k], n)*1/n*(ybar - y[k])
       }
       else{
         xxx =  X[,A]%*%XX_recorder[[A_id]]
-        y_hat =  xxx%*%(t(X[,A])%*%y-lambda*s_path[K,A]) + ybar
-        y_last = y_hat + get_xi(0, hkk_path[K], n)*(xxx%*%X[k,A]+1/n)*(y_hat[k] - y[k])
+        y_hat =  xxx%*%(t(X[,A])%*%y-lambda*s[A]) + ybar
+        y_last = y_hat + get_xi(0, hk[k], n)*(xxx%*%X[k,A]+1/n)*(y_hat[k] - y[k])
       }
       
       CD_list = c(CD_list, sum((y_last - y_tilde)**2))
@@ -322,11 +287,14 @@ CookDisLasso <- function(X, y, k = NULL, finesse = NULL, lambda = NULL, threshol
     CD_Mat = cbind(cd0,CD_Mat)
   }
   
-  
+  colnames(CD_Mat) <- NULL
+  colnames(beta_hat_table) <- NULL
+  rownames(threshold) <- NULL
   ans = list(CD_Mat = CD_Mat, Lambda_list = l_list, fraction = fraction, beta_table = beta_hat_table)
 
   if (threshold){
-    threshold_table = cbind(fraction,sqrt(apply(CD_Mat,2,var)/2)*qchisq(0.95,1))
+    value = sqrt(apply(CD_Mat,2,var)/2)*qchisq(0.95,1)
+    threshold_table = cbind(fraction,value)
     ans$threshold = threshold_table
   }
   

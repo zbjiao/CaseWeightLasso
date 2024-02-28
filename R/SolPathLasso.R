@@ -26,11 +26,11 @@ source('../CaseWeightLasso/R/common.R')
 #' detach(diabetes)
 #' 
 #' set.seed(100)
-# x = matrix(rnorm(50*200),nrow=50)
-# y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
-# SolPathLasso(x,y,k = 1, lambda = 1, plot = 2)
+#' x = matrix(rnorm(50*200),nrow=50)
+#' y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
+#' SolPathLasso(x,y,k = 1, lambda = 1, plot = 2)
 #' @export
-SolPathLasso <- function(X,y,k=1,lambda=50, plot=0, lb = 0){
+SolPath.LooLasso <- function(X, y, k = 1, lambda = 50, plot = 0, lb = 0){
   
   X = centralize(X)
 
@@ -49,13 +49,16 @@ SolPathLasso <- function(X,y,k=1,lambda=50, plot=0, lb = 0){
   if(is.null(colnames(X))){
     colnames(X) = 1:p
   }
+  if (lambda ==0 & n<p){
+    stop("it is beyond the scope of this function", call. = FALSE)
+  }
   
   # obtain lasso solution
   # fit = glmnet(X,y,family="gaussian",lambda=lambda/n,standardize=FALSE,thresh=1e-16,intercept=T)
   # beta_hat = as.vector(fit$beta)
   obj = lars(X,y,type='lasso',use.Gram = !(n<p | p>500))
-  beta_hat = coef(obj,s=lambda,mode='lambda')
-  # beta_hat = as.vector(predict.lars(obj,mode='lambda', s=lambda, type = 'coefficients')$coefficients)
+  # beta_hat = coef(obj,s=lambda,mode='lambda')
+  beta_hat = as.vector(predict.lars(obj,mode='lambda', s=lambda, type = 'coefficients')$coefficients)
   
   ybar = mean(y)
   # record the sign of each covariate 
@@ -120,7 +123,8 @@ SolPathLasso <- function(X,y,k=1,lambda=50, plot=0, lb = 0){
       return(list(w_path = c(1,0),hkk_path = c(hk[k], hk[k]), 
                   beta_path = rbind(beta_hat, beta1), s_path = rbind(s,s = sign(beta1)), 
                   beta0_path = c(ybar, beta10),l1norm = sum(abs(beta_hat))))
-    }
+  }
+
   hk_path = c()
   # beta path records beta hat's value at each breakpoint
   beta_path = c(beta_hat)
@@ -231,7 +235,6 @@ SolPathLasso <- function(X,y,k=1,lambda=50, plot=0, lb = 0){
       coln = colnames(X)
     }
     num_z = apply(beta_path, 2, function(c) sum(abs(c)< 1e-10))
-    print(num_z)
     ind = which(num_z>0 & num_z<length(w_path))
     if (length(ind)>0){
       if(plot ==1){
