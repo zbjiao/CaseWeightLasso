@@ -22,15 +22,15 @@ source('../CaseWeightLasso/R/common.R')
 #' library(lars)
 #' data(diabetes)
 #' attach(diabetes)
-#' SolPathLasso(x,y,k = 182, lambda = 5, plot = 2)
+#' SolPathLooLasso(x,y,k = 182, lambda = 5, plot = 2)
 #' detach(diabetes)
 #' 
 #' set.seed(100)
 #' x = matrix(rnorm(50*200),nrow=50)
 #' y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
-#' SolPathLasso(x,y,k = 1, lambda = 1, plot = 2)
+#' SolPathLooLasso(x,y,k = 1, lambda = 1, plot = 2)
 #' @export
-SolPath.LooLasso <- function(X, y, k = 1, lambda = 50, plot = 0, lb = 0){
+SolPathLooLasso <- function(X, y, k = 1, lambda = 50, plot = 0, lb = 0){
   
   X = centralize(X)
 

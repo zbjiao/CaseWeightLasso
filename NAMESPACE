@@ -2,4 +2,4 @@
 
 export(CookDisLasso)
 export(ResidLevPlot)
-export(SolPathLasso)
+export(SolPathLooLasso)

@@ -34,7 +34,7 @@ source('../CaseWeightLasso/R/common.R')
 #' set.seed(1)
 #' x = matrix(rnorm(50*200),nrow=50)
 #' y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
-#' CookDisLasso(x,y, k=1:10, lambda=c(1,2), threshold = FALSE)
+#' CookDisLasso(x,y, k=1:10, lambda=c(1,2), threshold = FALSE, plot=FALSE)
 #' @export
 CookDisLasso <- function(X, y, k = NULL, fineness = NULL, lambda = NULL, threshold = TRUE, plot = TRUE) {
   if (!is.null(k) && threshold) {

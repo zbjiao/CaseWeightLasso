@@ -8,7 +8,7 @@ CookDisLasso(
   X,
   y,
   k = NULL,
-  finesse = NULL,
+  fineness = NULL,
   lambda = NULL,
   threshold = TRUE,
   plot = TRUE
@@ -19,9 +19,9 @@ CookDisLasso(
 
 \item{y}{vector n by 1      response vector}
 
-\item{k}{number or vector   if only one or a subset of observations are of interest}
+\item{k}{number or vector   if one or a subset of observations are of interest}
 
-\item{finesse}{float <=0.05       how fine the lambda candidate set is}
+\item{fineness}{float <=0.05       how fine the lambda candidate set is}
 
 \item{lambda}{number or vector   if only one or a subset of penalty parameters are of interest}
 
@@ -32,7 +32,7 @@ CookDisLasso(
 \value{
 CD_Mat          matrix n by f      matrix of cook's distance at each fraction
 Lambda_list     vector f by 1      a vector of lambdas at each fraction
-fraction        vector f by 1      a vector of fractions based on required finesse
+fraction        vector f by 1      a vector of fractions based on required fineness
 threshold_table matrix f by 2      threshold at each fraction
 beta_hat_table  matrix p by f      a matrix of betahats at each fraction
 fig        the case influence graph
@@ -46,8 +46,8 @@ case influence graph.
 \enumerate{
 \item threshold needs case influence of all observations to calculate. So threshold should be set to False if the functions only calculate
 case influence for a subset of observations,i.e. k is not NULL.\\
-\item finesse automatically chooses a list of lambda candidates from 0 to maximum lambda that penalizes all beta to 0. If lambda candidate
-is pre-specified, i.e. lambda is not NULL, finesse should be set to NULL.
+\item fineness automatically chooses a list of lambda candidates from 0 to maximum lambda that penalizes all beta to 0. If lambda candidate
+is pre-specified, i.e. lambda is not NULL, fineness should be set to NULL.
 }
 }
 \examples{
@@ -57,7 +57,8 @@ attach(diabetes)
 CookDisLasso(x,y)
 detach(diabetes)
 
+set.seed(1)
 x = matrix(rnorm(50*200),nrow=50)
 y = x[,1:5]\%*\%c(5,4,3,2,1) + rnorm(50)
-CookDisLasso(x,y, k=1:10, lambda=c(1,2), threshold = FALSE)
+CookDisLasso(x,y, k=1:10, lambda=c(1,2), threshold = FALSE, plot=FALSE)
 }
