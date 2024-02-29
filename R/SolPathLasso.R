@@ -6,7 +6,15 @@ source('../CaseWeightLasso/R/common.R')
 #' @param X           matrix n by p      design matrix
 #' @param y           vector n by 1      response vector
 #' @param k           integer            observation of interest
-#' @param lambda      float > 0          penalty parameter
+#' @param s           a value, or vector of values, indexing the penalty levels to consider.
+#'                    Its values depends on the mode= argument. By default (mode="fraction"), 
+#'                    s should take on values between 0 and 1. 
+#' @param mode        Mode="fraction", then s should be a number between 0 and 1, and it refers 
+#'                    to the ratio of the L1 norm of the coefficient vector, relative to the 
+#'                    norm at the full LS solution if n>p or the minimum L1 norm linear 
+#'                    interpolation solution if n<=p. Mode="norm" means s refers to the L1 norm 
+#'                    of the coefficient vector. Mode="lambda" uses the lasso regularization 
+#'                    parameter for s. Abbreviations allowed.
 #' @param plot        0                  no plot 
 #'                    1                  plot approximate 
 #'                    2                  plot exact solution path
@@ -25,13 +33,15 @@ source('../CaseWeightLasso/R/common.R')
 #' SolPathLooLasso(x,y,k = 182, lambda = 5, plot = 2)
 #' detach(diabetes)
 #' 
-#' set.seed(100)
-#' x = matrix(rnorm(50*200),nrow=50)
-#' y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
-#' SolPathLooLasso(x,y,k = 1, lambda = 1, plot = 2)
+# set.seed(100)
+# x = matrix(rnorm(50*200),nrow=50)
+# y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
+# SolPathLooLasso(x,y,k = 1, s = 0.7, mode = "fraction", plot = 2)
 #' @export
-SolPathLooLasso <- function(X, y, k = 1, lambda = 50, plot = 0, lb = 0){
+SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda"), 
+                            plot = 0, lb = 0){
   
+  mode <- match.arg(mode)
   X = centralize(X)
 
   n = dim(X)[1]
@@ -49,7 +59,7 @@ SolPathLooLasso <- function(X, y, k = 1, lambda = 50, plot = 0, lb = 0){
   if(is.null(colnames(X))){
     colnames(X) = 1:p
   }
-  if (lambda ==0 & n<p){
+  if (( (s==0 & mode=="lambda") | (s==1 & mode == "fraction") ) & n<p){
     stop("it is beyond the scope of this function", call. = FALSE)
   }
   
@@ -58,7 +68,16 @@ SolPathLooLasso <- function(X, y, k = 1, lambda = 50, plot = 0, lb = 0){
   # beta_hat = as.vector(fit$beta)
   obj = lars(X,y,type='lasso',use.Gram = !(n<p | p>500))
   # beta_hat = coef(obj,s=lambda,mode='lambda')
-  beta_hat = as.vector(predict.lars(obj,mode='lambda', s=lambda, type = 'coefficients')$coefficients)
+  beta_hat = as.vector(predict.lars(obj,mode=mode, s=s, type = 'coefficients')$coefficients)
+  
+  if (mode == 'lambda'){
+    lambda = s}
+  else{
+    nbeta1 = drop(abs(obj$beta) %*% rep(1, p))
+    nbeta2 = drop(rep(1, p) %*% abs(beta_hat))
+    lambda = approx(nbeta1, c(obj$lambda,0), xout = nbeta2)$y
+  }
+  
   
   ybar = mean(y)
   # record the sign of each covariate 
@@ -286,5 +305,5 @@ SolPathLooLasso <- function(X, y, k = 1, lambda = 50, plot = 0, lb = 0){
   
   return(list(w_path = w_path, hkk_path = hkk_path, beta_path = beta_path, 
               s_path = s_path, beta0_path = beta0_path,
-              l1norm = as.vector(apply(beta_path, 1, function(x) sum(abs(x))))))
+              l1norm = as.vector(apply(abs(beta_path), 1, sum))))
 }

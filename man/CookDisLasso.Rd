@@ -7,35 +7,50 @@
 CookDisLasso(
   X,
   y,
-  k = NULL,
-  fineness = NULL,
-  lambda = NULL,
+  k,
+  fineness,
+  s,
+  mode = c("fraction", "norm", "lambda"),
   threshold = TRUE,
   plot = TRUE
 )
 }
 \arguments{
-\item{X}{matrix n by p      design matrix}
+\item{X}{matrix of predictors}
 
-\item{y}{vector n by 1      response vector}
+\item{y}{response}
 
-\item{k}{number or vector   if one or a subset of observations are of interest}
+\item{k}{an integer, or vector of integers representing the index/indices
+of observations that are of interest. By default, CookDisLasso considers
+all observations.}
 
-\item{fineness}{float <=0.05       how fine the lambda candidate set is}
+\item{fineness}{number of grid points for fractions being considered from 0 to 1.
+The default is set to be 100. Then we take fractions 0, 0.01, ..., 0.99}
 
-\item{lambda}{number or vector   if only one or a subset of penalty parameters are of interest}
+\item{s}{a value, or vector of values, indexing the penalty levels to consider.
+Its values depends on the mode= argument. By default (mode="fraction"),
+s should take on values between 0 and 1.}
 
-\item{threshold}{Boolean            whether to calculate the threshold for influential points}
+\item{mode}{Mode="fraction", then s should be a number between 0 and 1, and it refers
+to the ratio of the L1 norm of the coefficient vector, relative to the
+norm at the full LS solution if n>p or the minimum L1 norm linear
+interpolation solution if n<=p. Mode="norm" means s refers to the L1 norm
+of the coefficient vector. Mode="lambda" uses the lasso regularization
+parameter for s. Abbreviations allowed.}
 
-\item{plot}{Boolean            whether to plot the case influence graph}
+\item{threshold}{If TRUE, CookDisLasso prints the threshold for influential points. This
+can only set to be TRUE if k is 1:n (by default).}
+
+\item{plot}{If TRUE, CookDisLasso plots the case influence graph}
 }
 \value{
-CD_Mat          matrix n by f      matrix of cook's distance at each fraction
-Lambda_list     vector f by 1      a vector of lambdas at each fraction
-fraction        vector f by 1      a vector of fractions based on required fineness
-threshold_table matrix f by 2      threshold at each fraction
-beta_hat_table  matrix p by f      a matrix of betahats at each fraction
-fig        the case influence graph
+CD_Mat          matrix n by f      matrix of cook's distance at each fraction \cr
+Lambda_list     vector f by 1      a vector of lambdas at each fraction \cr
+fraction        vector f by 1      a vector of fractions based on required fineness \cr
+threshold_table matrix f by 2      threshold at each fraction \cr
+beta_hat_table  matrix p by f      a matrix of betahats at each fraction \cr
+fig        the case influence graph \cr
+where f means the number of fractions CookDisLasso considers. Its either |k| or fineness.
 }
 \description{
 Using case-weight lasso model and the solution path algorithm, this function calculates
@@ -44,8 +59,8 @@ case influence graph.
 }
 \details{
 \enumerate{
-\item threshold needs case influence of all observations to calculate. So threshold should be set to False if the functions only calculate
-case influence for a subset of observations,i.e. k is not NULL.\\
+\item threshold needs case influence of all observations to calculate. So threshold should be set to FALSE if the functions only calculate
+case influence for a subset of observations,i.e. k is not NULL.
 \item fineness automatically chooses a list of lambda candidates from 0 to maximum lambda that penalizes all beta to 0. If lambda candidate
 is pre-specified, i.e. lambda is not NULL, fineness should be set to NULL.
 }
@@ -57,8 +72,4 @@ attach(diabetes)
 CookDisLasso(x,y)
 detach(diabetes)
 
-set.seed(1)
-x = matrix(rnorm(50*200),nrow=50)
-y = x[,1:5]\%*\%c(5,4,3,2,1) + rnorm(50)
-CookDisLasso(x,y, k=1:10, lambda=c(1,2), threshold = FALSE, plot=FALSE)
 }
