@@ -25,7 +25,7 @@ centralize <- function(x, r = F){
   x = scale(x, meanx, FALSE)
   normx = sqrt(drop(rep(1,n) %*% (x^2)))
   if (r){
-    return(list(m = meanx, d = scale(x,FALSE,normx), v = normx)) 
+    return(list(d = scale(x,FALSE,normx), m = meanx, v = normx)) 
   }
   scale(x, FALSE, normx) 
 }

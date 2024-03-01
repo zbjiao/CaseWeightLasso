@@ -418,4 +418,3 @@ plot.CookDisLasso <- function(object, mode=c('case-influence-graph','residual-le
 }
 
 
-

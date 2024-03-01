@@ -18,7 +18,6 @@ source('../CaseWeightLasso/R/common.R')
 #' @param plot        0                  no plot 
 #'                    1                  plot approximate 
 #'                    2                  plot exact solution path
-#' @param lb          float < 1          the lower bound of omega 
 #' @return w_path          vector b by 1      a vector of breakpoints
 #'         hkk_path        vector b by 1      leverages at each breakpoint
 #'         beta_path       matrix b by p      beta estimate at each breakpoint
@@ -33,16 +32,21 @@ source('../CaseWeightLasso/R/common.R')
 #' SolPathLooLasso(x,y,k = 182, lambda = 5, plot = 2)
 #' detach(diabetes)
 #' 
-# set.seed(100)
-# x = matrix(rnorm(50*200),nrow=50)
-# y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
-# SolPathLooLasso(x,y,k = 1, s = 0.7, mode = "fraction", plot = 2)
+#' set.seed(100)
+#' x = matrix(rnorm(50*200),nrow=50)
+#' y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
+#' ans = SolPathLooLasso(x,y,k = 1, s = 0.7, mode = "fraction")
+#' plot(ans)
+#' predict(ans)
 #' @export
-SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda"), 
-                            plot = 0, lb = 0){
+SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda")){
   
   mode <- match.arg(mode)
-  X = centralize(X)
+  X_ = centralize(X, r = T)
+  X = X_$d
+  meanx = X_$m
+  normx = X_$v
+  
 
   n = dim(X)[1]
   p = dim(X)[2]
@@ -104,45 +108,13 @@ SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda
     beta1 = as.vector(coef(lm(y[-k]~X[-k,])))
     beta10 = beta1[1]
     beta1 = beta1[2:(p+1)]
-    ind = c(which((beta_hat>0) & (beta1<0)),  which((beta_hat<0) & (beta1>0)))
-    if(plot){
-      coln = colnames(X)
-      plot_helper0 <- function(w,ind){
-        A = get_xi(w,hk[k],n)%*%t(XX%*%X[k,]*(yk_hat - y[k]))
-        as.vector(t(A[,ind]) + (XX%*%(t(X)%*%y))[ind])
-      }
-      if (length(ind)>0){
-        if (length(ind) == 1){
-          xx = data.frame(coef = coln[ind])
-          print(ggplot()+xlim(lb,1) + xlab(TeX("Case weight $\\omega$")) + 
-                  ylab(TeX("Coefficient estimate $\\hat{\\beta}$")) + 
-                  geom_function(data = xx, fun = plot_helper0, args = list(ind),aes(color = coef))+ 
-                  ggtitle(paste("Solution path for Case",toString(k)))+
-                  theme(plot.title = element_text(hjust = 0.5),
-                        panel.background = element_rect(fill = "white"),
-                        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.5)))
-        }
-        else{
-          fig = ggplot()+xlim(lb,1)
-          for (j in 1:length(ind)){
-            xx = data.frame(coef = coln[ind[j]])
-            fig = fig + geom_function(data = xx, fun = plot_helper0, args = list(ind[j]),
-                                      aes(color = coef)) 
-          }
-          print(fig + xlab(TeX("Case weight $\\omega$")) + ylab(TeX("Coefficient estimate $\\hat{\\beta}$")) + ggtitle(paste("Solution path for Case",toString(k))) +
-                  theme(plot.title = element_text(hjust = 0.5),
-                        panel.background = element_rect(fill = "white"),
-                        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.5)))
-        }
-      }
-      else{
-        print(paste('there is no sign change for case',toString(k)))
-      }
-    }
-      return(list(w_path = c(1,0),hkk_path = c(hk[k], hk[k]), 
-                  beta_path = rbind(beta_hat, beta1), s_path = rbind(s,s = sign(beta1)), 
-                  beta0_path = c(ybar, beta10),l1norm = sum(abs(beta_hat))))
-  }
+    ans = list(w_path = c(1,0),hkk_path = c(hk[k], hk[k]), 
+               beta_path = rbind(beta_hat, beta1), s_path = rbind(s,s = sign(beta1)), 
+               beta0_path = c(ybar, beta10),l1norm = sum(abs(beta_hat)),
+               normx = normx, meanx = meanx, obs_of_interest = k, special=T)
+    class(ans) <- "SolPathLooLasso"
+    return(invisible(ans))
+  } 
 
   hk_path = c()
   # beta path records beta hat's value at each breakpoint
@@ -185,15 +157,15 @@ SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda
     ind = which(xi_cand == xi_cand0)
     # update beta
     if (sum(A) > 0){
-      beta_hat[A] = beta_hat[A] + min(get_xi(lb,hk[k],n),xi_cand0)*slope_beta
+      beta_hat[A] = beta_hat[A] + min(get_xi(0,hk[k],n),xi_cand0)*slope_beta
     }
     beta_path = rbind(beta_path, beta_hat)
-    beta_hat0 = ybar + min(get_xi(lb,hk[k],n),xi_cand0) * bias/n
+    beta_hat0 = ybar + min(get_xi(0,hk[k],n),xi_cand0) * bias/n
     beta0_path = c(beta0_path, beta_hat0)
     
     # if the xi is off the bound, stop the algorithm
-    if (xi_cand0 > get_xi(lb,hk[k],n)){
-      w_path = c(w_path, lb)
+    if (xi_cand0 > get_xi(0,hk[k],n)){
+      w_path = c(w_path, 0)
       hkk_path = c(hkk_path, hk[k])
       s_path = rbind(s_path, s)
       hk_path = cbind(hk_path, hk)
@@ -207,11 +179,11 @@ SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda
       # check if active set is empty 
       if (sum(A) == 0){
         hk_path = cbind(hk_path, 0,0)
-        w_path = c(w_path, get_w(xi_cand0, hk[k], n), lb)
+        w_path = c(w_path, get_w(xi_cand0, hk[k], n), 0)
         hkk_path = c(hkk_path, 0, 0)
         s_path = rbind(s_path, s, s)
         beta_path = rbind(beta_path, beta_hat)
-        beta0_path = c(beta0_path, ybar + get_xi(lb,0,n) * (ybar-y[k])/n)
+        beta0_path = c(beta0_path, ybar + get_xi(0,0,n) * (ybar-y[k])/n)
         break
       }
     }
@@ -237,24 +209,97 @@ SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda
     hk = X[,A]%*%XX%*%X[k,A]
     yk_hat = drop(ybar + X[k,] %*% beta_hat)
   }
-  if(plot){
-    plot_helper <-function(x, df){
-      i = findInterval(-x, -w_path, rightmost.closed = T)
-      beta1 = df[i]
-      beta2 = df[i+1]
-      w1 = w_path[i]
-      w2 = w_path[i+1]
-      hkk = hkk_path[i]
-      beta1+(beta2-beta1)*(get_xi(x, hkk, n) - get_xi(w1, hkk, n))/(get_xi(w2, hkk, n) - get_xi(w1, hkk, n))
-    }
-    if (is.null(colnames(X))){
-      coln = 1:p
+  rownames(beta_path) <- NULL
+  rownames(s_path) <- NULL
+  
+  ans = list(w_path = w_path, hkk_path = hkk_path, beta_path = beta_path, 
+              s_path = s_path, beta0_path = beta0_path,
+              l1norm = as.vector(apply(abs(beta_path), 1, sum)),
+             normx = normx, meanx = meanx, obs_of_interest = k,
+             special = F)
+  class(ans) <- "SolPathLooLasso"
+  invisible(ans)
+}
+
+
+predict.SolPathLooLasso <- function(obj, newx, type = c("fit", "coefficients")){
+  type <- match.arg(type)
+  if(missing(newx) & type == "fit") {
+    warning("Type=fit with no newx argument; type switched to coefficients"
+    )
+    type <- "coefficients"
+  }
+  L = length(obj$w_path)
+  ans <- switch(type,
+                    coefficients = list(obs_of_interest = obj$obs_of_interest,
+                                        loobeta = drop(obj$beta_path[L,]),
+                                        loobeta0 = drop(obj$beta0_path[L])),
+                    fit = list(obs_of_interest = obj$obs_of_interest,
+                                fit = drop(scale(newx, obj$meanx, obj$normx) %*% 
+                                             obj$beta_path[L,]) + obj$beta0_path[L]))
+  ans
+}
+
+
+plot.SolPathLooLasso <- function(object, plot=2){
+  k = object$obs_of_interest
+  plot_helper <-function(x, df){
+    i = findInterval(-x, -w_path, rightmost.closed = T)
+    beta1 = df[i]
+    beta2 = df[i+1]
+    w1 = w_path[i]
+    w2 = w_path[i+1]
+    hkk = hkk_path[i]
+    beta1+(beta2-beta1)*(get_xi(x, hkk, n) - get_xi(w1, hkk, n))/(get_xi(w2, hkk, n) - get_xi(w1, hkk, n))
+  }
+  beta_path = object$beta_path
+  w_path = object$w_path
+  hkk_path = object$hkk_path
+  
+  coln = 1:length(beta_path[1,])
+  
+  # ind = c(which((beta_hat>0) & (beta1<0)),  which((beta_hat<0) & (beta1>0)))
+  num_z = apply(beta_path, 2, function(c) sum(abs(c)< 1e-10))
+  ind = which(num_z>0 & num_z<length(w_path))
+  
+  if(object$special){
+    if (length(ind)>0){
+      if (length(ind) == 1){
+        xx = data.frame(coef = coln[ind])
+        print(ggplot()+xlim(0,1) + xlab(TeX("Case weight $\\omega$")) + 
+                ylab(TeX("Coefficient estimate $\\hat{\\beta}$")) + 
+                geom_function(data = xx, fun = plot_helper0, args = list(ind),aes(color = coef))+ 
+                ggtitle(paste("Solution path for Case",toString(k)))+
+                theme(plot.title = element_text(hjust = 0.5),
+                      panel.background = element_rect(fill = "white"),
+                      panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.5)))
+      }
+      else{
+        fig = ggplot()+xlim(0,1)
+        for (j in 1:length(ind)){
+          xx = data.frame(coef = coln[ind[j]])
+          fig = fig + geom_function(data = xx, fun = plot_helper0, args = list(ind[j]),
+                                    aes(color = coef)) 
+        }
+        print(fig + xlab(TeX("Case weight $\\omega$")) + ylab(TeX("Coefficient estimate $\\hat{\\beta}$")) + ggtitle(paste("Solution path for Case",toString(k))) +
+                theme(plot.title = element_text(hjust = 0.5),
+                      panel.background = element_rect(fill = "white"),
+                      panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.5)))
+      }
     }
     else{
-      coln = colnames(X)
+      print(paste('there is no sign change for case',toString(k)))
     }
-    num_z = apply(beta_path, 2, function(c) sum(abs(c)< 1e-10))
-    ind = which(num_z>0 & num_z<length(w_path))
+  }
+  else{
+    # beta_path = object$beta_path
+    # w_path = object$w_path
+    # hkk_path = object$hkk_path
+    # 
+    # coln = 1:length(beta_path[1,])
+    # 
+    # num_z = apply(beta_path, 2, function(c) sum(abs(c)< 1e-10))
+    # ind = which(num_z>0 & num_z<length(w_path))
     if (length(ind)>0){
       if(plot ==1){
         df = cbind(beta_path[,ind], w_path)
@@ -271,7 +316,7 @@ SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda
       else{
         if (length(ind) == 1){
           xx = data.frame(coef = coln[ind])
-          print(ggplot()+xlim(lb,1) + xlab(TeX("Case weight $\\omega$")) + 
+          print(ggplot()+xlim(0,1) + xlab(TeX("Case weight $\\omega$")) + 
                   ylab(TeX("Coefficient estimate $\\hat{\\beta}$")) + 
                   geom_function(data = xx, fun = plot_helper, args = list(beta_path[,ind]), aes(color = coef))+ 
                   ggtitle(paste("Solution path for Observation",toString(k)))+
@@ -282,7 +327,7 @@ SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda
         else{
           df = beta_path[,ind]
           colnames(df) = coln[ind]
-          fig = ggplot()+xlim(lb,1)
+          fig = ggplot()+xlim(0,1)
           for (j in 1:length(ind)){
             xx = data.frame(coef = colnames(df)[j])
             fig = fig + geom_function(data = xx, fun = plot_helper, 
@@ -300,10 +345,11 @@ SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda
       print(paste('there is no sign change for case',toString(k)))
     }
   }
-  rownames(beta_path) <- NULL
-  rownames(s_path) <- NULL
-  
-  return(list(w_path = w_path, hkk_path = hkk_path, beta_path = beta_path, 
-              s_path = s_path, beta0_path = beta0_path,
-              l1norm = as.vector(apply(abs(beta_path), 1, sum))))
 }
+  
+
+coef.SolPathLooLasso <- function(object){ans = predict(object, type = "coefficient")
+    data.frame(coef = c(ans$loobeta0,ans$loobeta),row.names = c('intercept',1:length(ans$loobeta)))
+}
+
+
