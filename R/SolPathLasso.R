@@ -1,8 +1,7 @@
 source('../CaseWeightLasso/R/common.R')
 
 
-#' Output the solution path of observation k when lambda is fixed. 
-#' Only covariates that have sign change are included in the solution path plot
+#' obtain the solution path of observation k when lambda is fixed. 
 #' @param X           matrix n by p      design matrix
 #' @param y           vector n by 1      response vector
 #' @param k           integer            observation of interest
@@ -15,21 +14,25 @@ source('../CaseWeightLasso/R/common.R')
 #'                    interpolation solution if n<=p. Mode="norm" means s refers to the L1 norm 
 #'                    of the coefficient vector. Mode="lambda" uses the lasso regularization 
 #'                    parameter for s. Abbreviations allowed.
-#' @param plot        0                  no plot 
-#'                    1                  plot approximate 
-#'                    2                  plot exact solution path
-#' @return w_path          vector b by 1      a vector of breakpoints
-#'         hkk_path        vector b by 1      leverages at each breakpoint
-#'         beta_path       matrix b by p      beta estimate at each breakpoint
-#'         s_path          matrix b by p      beta hat's sign at each breakpoint
-#'         beta0_path      vector b by 1      beta0 at each breakpoint 
-#'         l1norm          vector b by 1      l1 norm of beta at each breakpoint
-#'         the solution path visualization 
+#' @return \item{w_path}{a vector of breakpoints}
+#'         \item{hkk_path}{leverages at each breakpoint}
+#'         \item{beta_path}{beta estimate at each breakpoint}
+#'         \item{s_path}{beta hat's sign at each breakpoint}
+#'         \item{beta0_path}{beta0 at each breakpoint}
+#'         \item{l1norm}{l1 norm of beta at each breakpoint}
+#'         \item{normx}{standard deviation of X by column}
+#'         \item{meanx}{mean of X by column}
+#'         \item{obs_of_interest}{k}
+#'         \item{special}{A boolean recording if penalty is 0 or not}
+#' @description
+#' Only predictors that have sign change are included in the solution path plot
+#' @seealso predict, plot, coef methods
 #' @examples
 #' library(lars)
 #' data(diabetes)
 #' attach(diabetes)
-#' SolPathLooLasso(x,y,k = 182, lambda = 5, plot = 2)
+#' obj = SolPathLooLasso(x,y,k = 182, 5, 'lambda')
+#' 
 #' detach(diabetes)
 #' 
 #' set.seed(100)
@@ -38,6 +41,7 @@ source('../CaseWeightLasso/R/common.R')
 #' ans = SolPathLooLasso(x,y,k = 1, s = 0.7, mode = "fraction")
 #' plot(ans)
 #' predict(ans)
+#' coef(ans)
 #' @export
 SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda")){
   
@@ -221,7 +225,33 @@ SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda
   invisible(ans)
 }
 
-
+#' extract coefficients or estimates from a SolPathLooLasso object 
+#' @param obj         fitted SolPathLooLasso object 
+#' @param newx        Matrix of new values for x at which predictions are to be made. 
+#'                    Must be a matrix.
+#'                    This argument is not used for type="coefficients"
+#' @param type        Type of prediction required. 
+#'                    Type "coefficients" computes the LOO Lasso estimate 
+#'                    Type "fit" computes the y estimates of given newx
+#' @return The object returned depends on type.
+#' @seealso plot, coef methods
+#' @examples
+#' library(lars)
+#' data(diabetes)
+#' attach(diabetes)
+#' obj = SolPathLooLasso(x,y,k = 182, 5, 'lambda')
+#' 
+#' detach(diabetes)
+#' 
+#' set.seed(100)
+#' x = matrix(rnorm(50*200),nrow=50)
+#' y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
+#' ans = SolPathLooLasso(x,y,k = 1, s = 0.7, mode = "fraction")
+#' plot(ans)
+#' predict(ans)
+#' coef(ans)
+#' @export
+## S3 method for class 'SolPathLooLasso'
 predict.SolPathLooLasso <- function(obj, newx, type = c("fit", "coefficients")){
   type <- match.arg(type)
   if(missing(newx) & type == "fit") {
@@ -240,8 +270,30 @@ predict.SolPathLooLasso <- function(obj, newx, type = c("fit", "coefficients")){
   ans
 }
 
-
-plot.SolPathLooLasso <- function(object, plot=2){
+#' plot the solution path from a SolPathLooLasso object 
+#' @param object      fitted SolPathLooLasso object 
+#' @param plot        If plot=1, this function plots the linear approximated solution path.
+#'                    If plot=2, plot exact solution path.
+#' @return The solution path plot
+#' @seealso predict, coef methods
+#' @examples
+#' library(lars)
+#' data(diabetes)
+#' attach(diabetes)
+#' obj = SolPathLooLasso(x,y,k = 182, 5, 'lambda')
+#' 
+#' detach(diabetes)
+#' 
+#' set.seed(100)
+#' x = matrix(rnorm(50*200),nrow=50)
+#' y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
+#' ans = SolPathLooLasso(x,y,k = 1, s = 0.7, mode = "fraction")
+#' plot(ans)
+#' predict(ans)
+#' coef(ans)
+#' @export
+## S3 method for class 'SolPathLooLasso'
+plot.SolPathLooLasso <- function(object, plot = 2){
   k = object$obs_of_interest
   plot_helper <-function(x, df){
     i = findInterval(-x, -w_path, rightmost.closed = T)
@@ -292,14 +344,6 @@ plot.SolPathLooLasso <- function(object, plot=2){
     }
   }
   else{
-    # beta_path = object$beta_path
-    # w_path = object$w_path
-    # hkk_path = object$hkk_path
-    # 
-    # coln = 1:length(beta_path[1,])
-    # 
-    # num_z = apply(beta_path, 2, function(c) sum(abs(c)< 1e-10))
-    # ind = which(num_z>0 & num_z<length(w_path))
     if (length(ind)>0){
       if(plot ==1){
         df = cbind(beta_path[,ind], w_path)
@@ -348,8 +392,30 @@ plot.SolPathLooLasso <- function(object, plot=2){
 }
   
 
+#' extract coefficients from a SolPathLooLasso object 
+#' @param object      fitted SolPathLooLasso object 
+#' @param plot        If plot=1, this function plots the linear approximated solution path.
+#'                    If plot=2, plot exact solution path.
+#' @return The solution path plot
+#' @seealso predict, plot methods
+#' @examples
+#' library(lars)
+#' data(diabetes)
+#' attach(diabetes)
+#' obj = SolPathLooLasso(x,y,k = 182, 5, 'lambda')
+#' 
+#' detach(diabetes)
+#' 
+#' set.seed(100)
+#' x = matrix(rnorm(50*200),nrow=50)
+#' y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
+#' ans = SolPathLooLasso(x,y,k = 1, s = 0.7, mode = "fraction")
+#' plot(ans)
+#' predict(ans)
+#' coef(ans)
+#' @export
+## S3 method for class 'SolPathLooLasso'
 coef.SolPathLooLasso <- function(object){ans = predict(object, type = "coefficient")
-    data.frame(coef = c(ans$loobeta0,ans$loobeta),row.names = c('intercept',1:length(ans$loobeta)))
-}
+    data.frame(coef = c(ans$loobeta0,ans$loobeta),row.names = c('intercept',1:length(ans$loobeta)))}
 
 

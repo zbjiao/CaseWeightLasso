@@ -2,10 +2,9 @@
 % Please edit documentation in R/SolPathLasso.R
 \name{SolPathLooLasso}
 \alias{SolPathLooLasso}
-\title{Output the solution path of observation k when lambda is fixed.
-Only covariates that have sign change are included in the solution path plot}
+\title{obtain the solution path of observation k when lambda is fixed.}
 \usage{
-SolPathLooLasso(X, y, k = 1, lambda = 50, plot = 0, lb = 0)
+SolPathLooLasso(X, y, k = 1, s, mode = c("fraction", "norm", "lambda"))
 }
 \arguments{
 \item{X}{matrix n by p      design matrix}
@@ -14,36 +13,48 @@ SolPathLooLasso(X, y, k = 1, lambda = 50, plot = 0, lb = 0)
 
 \item{k}{integer            observation of interest}
 
-\item{lambda}{float > 0          penalty parameter}
+\item{s}{a value, or vector of values, indexing the penalty levels to consider.
+Its values depends on the mode= argument. By default (mode="fraction"),
+s should take on values between 0 and 1.}
 
-\item{plot}{0                  no plot
-1                  plot approximate
-2                  plot exact solution path}
-
-\item{lb}{float < 1          the lower bound of omega}
+\item{mode}{Mode="fraction", then s should be a number between 0 and 1, and it refers
+to the ratio of the L1 norm of the coefficient vector, relative to the
+norm at the full LS solution if n>p or the minimum L1 norm linear
+interpolation solution if n<=p. Mode="norm" means s refers to the L1 norm
+of the coefficient vector. Mode="lambda" uses the lasso regularization
+parameter for s. Abbreviations allowed.}
 }
 \value{
-w_path          vector b by 1      a vector of breakpoints
-hkk_path        vector b by 1      leverages at each breakpoint
-beta_path       matrix b by p      beta estimate at each breakpoint
-s_path          matrix b by p      beta hat's sign at each breakpoint
-beta0_path      vector b by 1      beta0 at each breakpoint
-l1norm          vector b by 1      l1 norm of beta at each breakpoint
-the solution path visualization
+\item{w_path}{a vector of breakpoints}
+\item{hkk_path}{leverages at each breakpoint}
+\item{beta_path}{beta estimate at each breakpoint}
+\item{s_path}{beta hat's sign at each breakpoint}
+\item{beta0_path}{beta0 at each breakpoint}
+\item{l1norm}{l1 norm of beta at each breakpoint}
+\item{normx}{standard deviation of X by column}
+\item{meanx}{mean of X by column}
+\item{obs_of_interest}{k}
+\item{special}{A boolean recording if penalty is 0 or not}
 }
 \description{
-Output the solution path of observation k when lambda is fixed.
-Only covariates that have sign change are included in the solution path plot
+Only predictors that have sign change are included in the solution path plot
 }
 \examples{
 library(lars)
 data(diabetes)
 attach(diabetes)
-SolPathLooLasso(x,y,k = 182, lambda = 5, plot = 2)
+obj = SolPathLooLasso(x,y,k = 182, 5, 'lambda')
+
 detach(diabetes)
 
 set.seed(100)
 x = matrix(rnorm(50*200),nrow=50)
 y = x[,1:5]\%*\%c(5,4,3,2,1) + rnorm(50)
-SolPathLooLasso(x,y,k = 1, lambda = 1, plot = 2)
+ans = SolPathLooLasso(x,y,k = 1, s = 0.7, mode = "fraction")
+plot(ans)
+predict(ans)
+coef(ans)
+}
+\seealso{
+predict, plot, coef methods
 }

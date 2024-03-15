@@ -1,10 +1,11 @@
 source('../CaseWeightLasso/R/common.R')
 
-#' Calculate case influence for the lasso
-#' @param X           matrix of predictors
-#' @param y           response 
+#' calculate case influence for Lasso regression
+#' @param X           input matrix, of dimension nobs x nvars; each row is an observation vector. 
+#'                    Requirement: nvars >1; in other words, x should have 2 or more columns.
+#' @param y           response variable. 
 #' @param k           an integer, or vector of integers representing the index/indices 
-#'                    of observations that are of interest. By default, CookDisLasso considers
+#'                    of observations that are of interest. By default, `CookDisLasso()` considers
 #'                    all observations. 
 #' @param fineness    number of grid points for fractions being considered from 0 to 1. 
 #'                    The default is set to be 100. Then we take fractions 0, 0.01, ..., 0.99
@@ -19,13 +20,14 @@ source('../CaseWeightLasso/R/common.R')
 #'                    parameter for s. Abbreviations allowed.
 #' @param threshold   If TRUE, CookDisLasso prints the threshold for influential points. This 
 #'                    can only set to be TRUE if k is 1:n (by default).
-#' @return CD_Mat          matrix n by f      matrix of cook's distance at each fraction \cr
-#'         Lambda_list     vector f by 1      a vector of lambdas at each fraction \cr
-#'         fraction        vector f by 1      a vector of fractions based on required fineness \cr
-#'         threshold_table matrix f by 2      threshold at each fraction \cr
-#'         beta_hat_table  matrix p by f      a matrix of betahats at each fraction \cr
-#'         fig        the case influence graph \cr
-#'         where f means the number of fractions CookDisLasso considers. Its either |k| or fineness.
+#' @return \item{CD_Mat}{matrix of cook's distance at each fraction}
+#'         \item{Lambda_list}{a vector of lambdas at each fraction}
+#'         \item{fraction}{a vector of fractions based on required fineness}
+#'         \item{threshold_table}{threshold at each fraction if threshold = TRUE}
+#'         \item{beta_hat_table}{a matrix of betahats at each fraction}
+#'         \item{index}{samples of interest. If k is specified in input, index = k, otherwise 1:n}
+#'         \item{lev_history}{record the leverages of samples of interest in each grid point specified in fineness}
+#'         \item{denom}{estimated error variance}
 #' @description
 #' Using case-weight lasso model and the solution path algorithm, this function calculates 
 #' the case influence for the lasso for all observations(for specified subset), all fractions(for specified lambdas) and also gives 
@@ -35,6 +37,7 @@ source('../CaseWeightLasso/R/common.R')
 #' case influence for a subset of observations,i.e. k is not NULL.
 #' 2. fineness automatically chooses a list of lambda candidates from 0 to maximum lambda that penalizes all beta to 0. If lambda candidate 
 #' is pre-specified, i.e. lambda is not NULL, fineness should be set to NULL.
+#' @seealso plot method
 #' @examples
 #' library(lars)
 #' data(diabetes)
@@ -47,7 +50,7 @@ source('../CaseWeightLasso/R/common.R')
 #' y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(200)
 #' obj1 = CookDisLasso(x,y, k=1:10, s=c(0.1,0.2), mode = "fraction", threshold = FALSE)
 #' plot(obj1, 'resid', 1)
-#' obj2 = CookDisLasso(x,y, fineness=40, threshold = T)
+#' obj2 = CookDisLasso(x,y, fineness=40, threshold = TRUE)
 #' plot(obj2, 'case-influence-graph')
 #' @export
 CookDisLasso <- function(X, y, k, fineness, s, mode = c("fraction", "norm", "lambda"),
@@ -329,7 +332,7 @@ CookDisLasso <- function(X, y, k, fineness, s, mode = c("fraction", "norm", "lam
   colnames(beta_hat_table) <- NULL
   rownames(threshold) <- NULL
   ans = list(CD_Mat = CD_Mat, Lambda_list = l_list, fraction = fraction, beta_table = beta_hat_table,
-             index = indices_vec, lev_history = lev_history, denom = denom, X=X, y=y)
+             index = indices_vec, lev_history = lev_history, denom = denom/(p+1), X=X, y=y)
 
   if (threshold){
     value = sqrt(apply(CD_Mat,2,var)/2)*qchisq(0.95,1)
@@ -359,6 +362,35 @@ CookDisLasso <- function(X, y, k, fineness, s, mode = c("fraction", "norm", "lam
 }
 
 
+#' print a CookDisLasso object 
+#' @param object       fitted CookDisLasso object 
+#' @param mode         specify which graph to print: 'case-influence-graph' or 'residual-leverage-plot'
+#' @param which.one    a integer specifying which fraction to print if mode=='residual-leverage-plot'
+#' @return the required plot
+#' @description
+#' this function is built for leverage-residual plot and case influence graph. \cr
+#' * Leverage-residual plot records the leverage and residual of obs and their Lasso case influence at one given fraction
+#' * Case influence graph records the Lasso case influence of obs as fraction goes from 1 to 0
+#' @details
+#' 'which.one' should be an integer indexing the fraction of interest. 
+#' The fraction of interest should be "object$fraction(which.one)". 
+#' If mode is set to be case-influence-graph, the function outputs case influence under all fractions.
+#' @examples
+#' library(lars)
+#' data(diabetes)
+#' attach(diabetes)
+#' CookDisLasso(x,y)
+#' detach(diabetes)
+#' 
+#' set.seed(10)
+#' x = matrix(rnorm(200*50),nrow=200)
+#' y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(200)
+#' obj1 = CookDisLasso(x,y, k=1:10, s=c(0.1,0.2), mode = "fraction", threshold = FALSE)
+#' plot(obj1, 'resid', 1)
+#' obj2 = CookDisLasso(x,y, fineness=40, threshold = TRUE)
+#' plot(obj2, 'case-influence-graph')
+#' @export
+## S3 method for class 'CookDisLasso'
 plot.CookDisLasso <- function(object, mode=c('case-influence-graph','residual-leverage-plot'), which.one){
   mode <- match.arg(mode)
   if (missing(which.one) & mode == 'residual-leverage-plot' & length(object$index)>1){

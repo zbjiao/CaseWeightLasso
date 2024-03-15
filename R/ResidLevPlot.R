@@ -21,21 +21,20 @@ source('../CaseWeightLasso/R/common.R')
 #' library(lars)
 #' data(diabetes)
 #' attach(diabetes)
-#' ResidLevPlot(x,y,1, FALSE)
+#' ResidLevPlot(x,y,1,'lambda', FALSE)
 #' detach(diabetes)
 #' 
-# x = matrix(rnorm(50*200),nrow=50)
-# y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
-# ResidLevPlot(x,y,0.7)
+#' x = matrix(rnorm(50*200),nrow=50)
+#' y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
+#' ResidLevPlot(x,y,0.7)
 #' @export
 ResidLevPlot <- function(X, y, s, mode = c("fraction", "norm", "lambda"), studentize = TRUE){
-  
   mode <- match.arg(mode)
   X = centralize(X)
   n = dim(X)[1]
   p = dim(X)[2]
 
-  result = CookDisLasso(X, y, s = s, mode=mode, threshold = TRUE, plot = FALSE)
+  result = CookDisLasso(X, y, s = s, mode=mode, threshold = TRUE)
   residy = y - mean(y) - (X%*%result$beta_table)
   X_ = X[,result$beta!=0]
   lev = result$lev_history

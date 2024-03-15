@@ -4,16 +4,31 @@
 \alias{ResidLevPlot}
 \title{Plot the residuals and leverages of all observations against their case influence when penalty is fixed}
 \usage{
-ResidLevPlot(X, y, lambda, studentize = TRUE)
+ResidLevPlot(
+  X,
+  y,
+  s,
+  mode = c("fraction", "norm", "lambda"),
+  studentize = TRUE
+)
 }
 \arguments{
 \item{X}{matrix n by p      design matrix}
 
 \item{y}{vector n by 1      response vector}
 
-\item{lambda}{number or vector   if only one or a subset of penalty parameters are of interest}
+\item{s}{a value indexing the penalty level to consider.
+Its values depends on the mode= argument. By default (mode="fraction"),
+s should take on values between 0 and 1.}
 
-\item{studentize}{Boolean            whether to studentize the residual}
+\item{mode}{Mode="fraction", then s should be a number between 0 and 1, and it refers
+to the ratio of the L1 norm of the coefficient vector, relative to the
+norm at the full LS solution if n>p or the minimum L1 norm linear
+interpolation solution if n<=p. Mode="norm" means s refers to the L1 norm
+of the coefficient vector. Mode="lambda" uses the lasso regularization
+parameter for s. Abbreviations allowed.}
+
+\item{studentize}{If true, ResidLevPlot studentizes the residual.}
 }
 \value{
 A plot includes all observations. X axis: leverage(when w=1), Y axis: residuals
@@ -26,10 +41,10 @@ Observations that are identified as influential points (having case influence gr
 library(lars)
 data(diabetes)
 attach(diabetes)
-ResidLevPlot(x,y,1, FALSE)
+ResidLevPlot(x,y,1,'lambda', FALSE)
 detach(diabetes)
 
 x = matrix(rnorm(50*200),nrow=50)
 y = x[,1:5]\%*\%c(5,4,3,2,1) + rnorm(50)
-ResidLevPlot(x,y,3)
+ResidLevPlot(x,y,0.7)
 }

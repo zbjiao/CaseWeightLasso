@@ -2,7 +2,7 @@
 % Please edit documentation in R/CookDisLasso.R
 \name{CookDisLasso}
 \alias{CookDisLasso}
-\title{Calculate case influence for the lasso and plot Case influence graph}
+\title{calculate case influence for Lasso regression}
 \usage{
 CookDisLasso(
   X,
@@ -11,17 +11,17 @@ CookDisLasso(
   fineness,
   s,
   mode = c("fraction", "norm", "lambda"),
-  threshold = TRUE,
-  plot = TRUE
+  threshold = TRUE
 )
 }
 \arguments{
-\item{X}{matrix of predictors}
+\item{X}{input matrix, of dimension nobs x nvars; each row is an observation vector.
+Requirement: nvars >1; in other words, x should have 2 or more columns.}
 
-\item{y}{response}
+\item{y}{response variable.}
 
 \item{k}{an integer, or vector of integers representing the index/indices
-of observations that are of interest. By default, CookDisLasso considers
+of observations that are of interest. By default, \code{CookDisLasso()} considers
 all observations.}
 
 \item{fineness}{number of grid points for fractions being considered from 0 to 1.
@@ -40,17 +40,16 @@ parameter for s. Abbreviations allowed.}
 
 \item{threshold}{If TRUE, CookDisLasso prints the threshold for influential points. This
 can only set to be TRUE if k is 1:n (by default).}
-
-\item{plot}{If TRUE, CookDisLasso plots the case influence graph}
 }
 \value{
-CD_Mat          matrix n by f      matrix of cook's distance at each fraction \cr
-Lambda_list     vector f by 1      a vector of lambdas at each fraction \cr
-fraction        vector f by 1      a vector of fractions based on required fineness \cr
-threshold_table matrix f by 2      threshold at each fraction \cr
-beta_hat_table  matrix p by f      a matrix of betahats at each fraction \cr
-fig        the case influence graph \cr
-where f means the number of fractions CookDisLasso considers. Its either |k| or fineness.
+\item{CD_Mat}{matrix of cook's distance at each fraction}
+\item{Lambda_list}{a vector of lambdas at each fraction}
+\item{fraction}{a vector of fractions based on required fineness}
+\item{threshold_table}{threshold at each fraction if threshold = TRUE}
+\item{beta_hat_table}{a matrix of betahats at each fraction}
+\item{index}{samples of interest. If k is specified in input, index = k, otherwise 1:n}
+\item{lev_history}{record the leverages of samples of interest in each grid point specified in fineness}
+\item{denom}{estimated error variance}
 }
 \description{
 Using case-weight lasso model and the solution path algorithm, this function calculates
@@ -72,4 +71,14 @@ attach(diabetes)
 CookDisLasso(x,y)
 detach(diabetes)
 
+set.seed(10)
+x = matrix(rnorm(200*50),nrow=200)
+y = x[,1:5]\%*\%c(5,4,3,2,1) + rnorm(200)
+obj1 = CookDisLasso(x,y, k=1:10, s=c(0.1,0.2), mode = "fraction", threshold = FALSE)
+plot(obj1, 'resid', 1)
+obj2 = CookDisLasso(x,y, fineness=40, threshold = TRUE)
+plot(obj2, 'case-influence-graph')
+}
+\seealso{
+plot method
 }
