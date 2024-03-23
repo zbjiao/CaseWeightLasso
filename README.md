@@ -3,7 +3,9 @@
 
 ## Overview
 
-CaseWeightLasso focuses on the Case-weight Adjusted Lasso Model: $$
+CaseWeightLasso focuses on the Case-weight Adjusted Lasso Model:
+
+$$
 \min_{\beta_0,\mathbf{\beta}}\quad \frac{1}{2}\sum_{i\neq k} (y_i - \beta_0 - \mathbf{x}_i^\top\mathbf{\beta})^2 + \frac{1}{2}\omega(y_k - \beta_0 - \mathbf{x}_k^\top\mathbf{\beta})^2 +\lambda \sum_{j=1}^p |\beta_j|
 $$
 
