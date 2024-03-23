@@ -115,7 +115,7 @@ SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda
     ans = list(w_path = c(1,0),hkk_path = c(hk[k], hk[k]), 
                beta_path = rbind(beta_hat, beta1), s_path = rbind(s,s = sign(beta1)), 
                beta0_path = c(ybar, beta10),l1norm = sum(abs(beta_hat)),
-               normx = normx, meanx = meanx, obs_of_interest = k, special=T)
+               normx = normx, meanx = meanx, obs_of_interest = k, n=n, special=T)
     class(ans) <- "SolPathLooLasso"
     return(invisible(ans))
   } 
@@ -219,7 +219,7 @@ SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda
   ans = list(w_path = w_path, hkk_path = hkk_path, beta_path = beta_path, 
               s_path = s_path, beta0_path = beta0_path,
               l1norm = as.vector(apply(abs(beta_path), 1, sum)),
-             normx = normx, meanx = meanx, obs_of_interest = k,
+             normx = normx, meanx = meanx, obs_of_interest = k,n=n,
              special = F)
   class(ans) <- "SolPathLooLasso"
   invisible(ans)
@@ -295,6 +295,7 @@ predict.SolPathLooLasso <- function(obj, newx, type = c("fit", "coefficients"), 
 ## S3 method for class 'SolPathLooLasso'
 plot.SolPathLooLasso <- function(object, plot = 2, ...){
   k = object$obs_of_interest
+  n = object$n
   plot_helper <-function(x, df){
     i = findInterval(-x, -w_path, rightmost.closed = T)
     beta1 = df[i]
@@ -320,7 +321,7 @@ plot.SolPathLooLasso <- function(object, plot = 2, ...){
         xx = data.frame(coef = coln[ind])
         print(ggplot()+xlim(0,1) + xlab(TeX("Case weight $\\omega$")) + 
                 ylab(TeX("Coefficient estimate $\\hat{\\beta}$")) + 
-                geom_function(data = xx, fun = plot_helper0, args = list(ind),aes(color = coef))+ 
+                geom_function(data = xx, fun = plot_helper, args = list(ind),aes(color = coef))+ 
                 ggtitle(paste("Solution path for Case",toString(k)))+
                 theme(plot.title = element_text(hjust = 0.5),
                       panel.background = element_rect(fill = "white"),
@@ -330,7 +331,7 @@ plot.SolPathLooLasso <- function(object, plot = 2, ...){
         fig = ggplot()+xlim(0,1)
         for (j in 1:length(ind)){
           xx = data.frame(coef = coln[ind[j]])
-          fig = fig + geom_function(data = xx, fun = plot_helper0, args = list(ind[j]),
+          fig = fig + geom_function(data = xx, fun = plot_helper, args = list(ind[j]),
                                     aes(color = coef)) 
         }
         print(fig + xlab(TeX("Case weight $\\omega$")) + ylab(TeX("Coefficient estimate $\\hat{\\beta}$")) + ggtitle(paste("Solution path for Case",toString(k))) +

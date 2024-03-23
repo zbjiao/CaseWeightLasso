@@ -62,29 +62,23 @@ y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
 ### Leave-one-out Solution Path
 
 Suppose we are interested in observation 1’s influence on the model at
-fraction = 0.7. \`obj’ is a SolPathLooLasso object that records the path
-of different statistics as $\omega$ decreases from 1 to 0. We can plot
-solution path (only coefficients that have sign change are included in
-the figure), output the leave-one-out estimate of $y$ given a new set of
-$x$, or simply output the leave-one-out estimate of coefficients.
+fraction = 0.7:
 
 ``` r
 obj = SolPathLooLasso(x,y,k = 1, s = 0.7, mode = "fraction")
+```
 
+\`obj’ is a SolPathLooLasso object that records the path of different
+statistics as $\omega$ decreases from 1 to 0. We can plot solution path
+(only coefficients that have sign change are included in the figure),
+
+``` r
 plot(obj)
 ```
 
-    ## Warning: Computation failed in `stat_function()`
-    ## Computation failed in `stat_function()`
-    ## Computation failed in `stat_function()`
-    ## Computation failed in `stat_function()`
-    ## Computation failed in `stat_function()`
-    ## Computation failed in `stat_function()`
-    ## Computation failed in `stat_function()`
-    ## Caused by error in `n * (1 - w)`:
-    ## ! non-numeric argument to binary operator
+![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
-![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+output the leave-one-out estimate of $y$ given a new set of $x$,
 
 ``` r
 predict(obj,t(rnorm(200)),'fit')
@@ -96,11 +90,14 @@ predict(obj,t(rnorm(200)),'fit')
     ## $fit
     ## [1] 2.236312
 
+or simply output the leave-one-out estimate of coefficients.
+
 ``` r
-coef(obj)
+coef(obj)[2:12,]
 ```
 
-    ## NULL
+    ##  [1] 26.936606 31.062845 14.952128  8.337806  5.650303  0.000000  0.000000
+    ##  [8]  0.000000  0.000000  0.000000  0.000000
 
 ### Cook’s distance for the Lasso
 
@@ -114,7 +111,7 @@ obj1 = CookDisLasso(x,y, k=1:10, s=c(0.1,0.2), mode = "fraction", threshold = FA
 plot(obj1, 'resid', 1)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 The option ‘case-influence-graph’ gives you the case influence graph
 where you can see how case influence for the Lasso of each samples
@@ -125,4 +122,4 @@ obj2 = CookDisLasso(x,y, fineness=40, threshold = TRUE)
 plot(obj2, 'case-influence-graph')
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->

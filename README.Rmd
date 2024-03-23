@@ -63,7 +63,7 @@ predict(obj,t(rnorm(200)),'fit')
 ```
 or simply output the leave-one-out estimate of coefficients.
 ```{r}
-coef(obj)
+coef(obj)[2:12,]
 ```
 
 ### Cook's distance for the Lasso 

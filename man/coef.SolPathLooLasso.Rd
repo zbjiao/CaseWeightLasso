@@ -4,7 +4,7 @@
 \alias{coef.SolPathLooLasso}
 \title{extract coefficients from a SolPathLooLasso object}
 \usage{
-coef.SolPathLooLasso(object, ...)
+\method{coef}{SolPathLooLasso}(object, ...)
 }
 \arguments{
 \item{object}{fitted SolPathLooLasso object}
