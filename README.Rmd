@@ -11,11 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 CaseWeightLasso focuses on the Case-weight Adjusted Lasso Model: 
 
-
 $$
-\min_{\beta_0,{\beta}}\quad \frac{1}{2}\sum_{i\neq k} (y_i - \beta_0 - {x}_i^\top{\beta})^2 + \frac{1}{2}\omega(y_k - \beta_0 - {x}_k^\top{\beta})^2 +\lambda \sum_{j=1}^p |\beta_j|
+min_{\beta_0,\mathbf{\beta}}\quad \frac{1}{2}\sum_{i\neq k} (y_i - \beta_0 - \mathbf{x}_i^\top\mathbf{\beta})^2 + \frac{1}{2}\omega(y_k - \beta_0 - \mathbf{x}_k^\top\mathbf{\beta})^2 +\lambda \sum_{j=1}^p |\beta_j|
 $$
-
 
 The main utility of this package is the solution path algorithm and calculating the exact Cook's distance for the Lasso for observations of interest. The details can be found in []. This package is built based on [lars](https://cran.r-project.org/web/packages/lars/index.html) package by Hastie et al and require [tidyverse](https://www.tidyverse.org/) and [latex2exp](https://cran.r-project.org/web/packages/latex2exp/index.html) as prerequisites.
 
