@@ -4,8 +4,10 @@
 ## Overview
 
 CaseWeightLasso focuses on the Case-weight Adjusted Lasso Model: $$
-    \min_{\beta_0,\mathbf{\beta}}\quad \frac{1}{2}\sum_{i\neq k} (y_i - \beta_0 - \mathbf{x}_i^\top\mathbf{\beta})^2 + \frac{1}{2}\omega(y_k - \beta_0 - \mathbf{x}_k^\top\mathbf{\beta})^2 +\lambda \sum_{j=1}^p |\beta_j|
-$$ The main utility of this package is the solution path algorithm and
+\min_{\beta_0,\mathbf{\beta}}\quad \frac{1}{2}\sum_{i\neq k} (y_i - \beta_0 - \mathbf{x}_i^\top\mathbf{\beta})^2 + \frac{1}{2}\omega(y_k - \beta_0 - \mathbf{x}_k^\top\mathbf{\beta})^2 +\lambda \sum_{j=1}^p |\beta_j|
+$$
+
+The main utility of this package is the solution path algorithm and
 calculating the exact Cook’s distance for the Lasso for observations of
 interest. The details can be found in \[\]. This package is built based
 on [lars](https://cran.r-project.org/web/packages/lars/index.html)
@@ -48,8 +50,10 @@ library(CaseWeightLasso, quietly = T)
     ## ✖ dplyr::lag()    masks stats::lag()
     ## ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
 
-We use sythetic data to demonstrate the usage of this package. Consider
-X has $n=50$, $p=200$. Only the first 5 predictors are informative. $$
+We use synthetic data to demonstrate the usage of this package. Consider
+X has $n=50$, $p=200$. Only the first 5 predictors are informative.
+
+$$
 y = 5x_1+4x_2+3x_3+2x_4+x_5 + e,\ e\sim N(0,1).
 $$
 
