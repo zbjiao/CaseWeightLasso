@@ -391,7 +391,7 @@ CookDisLasso <- function(X, y, k, fineness, s, mode = c("fraction", "norm", "lam
 #' plot(obj2, 'case-influence-graph')
 #' @export
 ## S3 method for class 'CookDisLasso'
-plot.CookDisLasso <- function(object, mode=c('case-influence-graph','residual-leverage-plot'), which.one){
+plot.CookDisLasso <- function(object, mode=c('case-influence-graph','residual-leverage-plot'), which.one, ...){
   mode <- match.arg(mode)
   if (missing(which.one) & mode == 'residual-leverage-plot' & length(object$index)>1){
     stop('missing index to specify which penalty level to plot on')

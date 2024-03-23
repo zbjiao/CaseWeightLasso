@@ -252,7 +252,7 @@ SolPathLooLasso <- function(X, y, k = 1, s, mode = c("fraction", "norm", "lambda
 #' coef(ans)
 #' @export
 ## S3 method for class 'SolPathLooLasso'
-predict.SolPathLooLasso <- function(obj, newx, type = c("fit", "coefficients")){
+predict.SolPathLooLasso <- function(obj, newx, type = c("fit", "coefficients"), ...){
   type <- match.arg(type)
   if(missing(newx) & type == "fit") {
     warning("Type=fit with no newx argument; type switched to coefficients"
@@ -293,7 +293,7 @@ predict.SolPathLooLasso <- function(obj, newx, type = c("fit", "coefficients")){
 #' coef(ans)
 #' @export
 ## S3 method for class 'SolPathLooLasso'
-plot.SolPathLooLasso <- function(object, plot = 2){
+plot.SolPathLooLasso <- function(object, plot = 2, ...){
   k = object$obs_of_interest
   plot_helper <-function(x, df){
     i = findInterval(-x, -w_path, rightmost.closed = T)
@@ -394,8 +394,6 @@ plot.SolPathLooLasso <- function(object, plot = 2){
 
 #' extract coefficients from a SolPathLooLasso object 
 #' @param object      fitted SolPathLooLasso object 
-#' @param plot        If plot=1, this function plots the linear approximated solution path.
-#'                    If plot=2, plot exact solution path.
 #' @return The solution path plot
 #' @seealso predict, plot methods
 #' @examples
@@ -415,7 +413,7 @@ plot.SolPathLooLasso <- function(object, plot = 2){
 #' coef(ans)
 #' @export
 ## S3 method for class 'SolPathLooLasso'
-coef.SolPathLooLasso <- function(object){ans = predict(object, type = "coefficient")
+coef.SolPathLooLasso <- function(object, ...){ans = predict(object, type = "coefficient")
     data.frame(coef = c(ans$loobeta0,ans$loobeta),row.names = c('intercept',1:length(ans$loobeta)))}
 
 

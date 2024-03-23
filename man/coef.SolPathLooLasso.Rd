@@ -4,13 +4,10 @@
 \alias{coef.SolPathLooLasso}
 \title{extract coefficients from a SolPathLooLasso object}
 \usage{
-coef.SolPathLooLasso(object)
+coef.SolPathLooLasso(object, ...)
 }
 \arguments{
 \item{object}{fitted SolPathLooLasso object}
-
-\item{plot}{If plot=1, this function plots the linear approximated solution path.
-If plot=2, plot exact solution path.}
 }
 \value{
 The solution path plot

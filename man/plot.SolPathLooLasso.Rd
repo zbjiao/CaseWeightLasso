@@ -4,7 +4,7 @@
 \alias{plot.SolPathLooLasso}
 \title{plot the solution path from a SolPathLooLasso object}
 \usage{
-\method{plot}{SolPathLooLasso}(object, plot = 2)
+\method{plot}{SolPathLooLasso}(object, plot = 2, ...)
 }
 \arguments{
 \item{object}{fitted SolPathLooLasso object}

@@ -4,7 +4,7 @@
 \alias{predict.SolPathLooLasso}
 \title{extract coefficients or estimates from a SolPathLooLasso object}
 \usage{
-\method{predict}{SolPathLooLasso}(obj, newx, type = c("fit", "coefficients"))
+\method{predict}{SolPathLooLasso}(obj, newx, type = c("fit", "coefficients"), ...)
 }
 \arguments{
 \item{obj}{fitted SolPathLooLasso object}

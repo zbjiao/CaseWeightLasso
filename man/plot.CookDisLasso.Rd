@@ -7,7 +7,8 @@
 \method{plot}{CookDisLasso}(
   object,
   mode = c("case-influence-graph", "residual-leverage-plot"),
-  which.one
+  which.one,
+  ...
 )
 }
 \arguments{
