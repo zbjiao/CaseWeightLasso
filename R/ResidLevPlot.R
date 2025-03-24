@@ -1,32 +1,33 @@
 source('../CaseWeightLasso/R/common.R')
 
 
-#' Plot the residuals and leverages of all observations against their case influence when penalty is fixed 
+#' Plot the residuals and leverages of all observations against their case influence when penalty is fixed
 #' @param X           matrix n by p      design matrix
 #' @param y           vector n by 1      response vector
 #' @param s           a value indexing the penalty level to consider.
-#'                    Its values depends on the mode= argument. By default (mode="fraction"), 
-#'                    s should take on values between 0 and 1. 
-#' @param mode        Mode="fraction", then s should be a number between 0 and 1, and it refers 
-#'                    to the ratio of the L1 norm of the coefficient vector, relative to the 
-#'                    norm at the full LS solution if n>p or the minimum L1 norm linear 
-#'                    interpolation solution if n<=p. Mode="norm" means s refers to the L1 norm 
-#'                    of the coefficient vector. Mode="lambda" uses the lasso regularization 
+#'                    Its values depends on the mode= argument. By default (mode="fraction"),
+#'                    s should take on values between 0 and 1.
+#' @param mode        Mode="fraction", then s should be a number between 0 and 1, and it refers
+#'                    to the ratio of the L1 norm of the coefficient vector, relative to the
+#'                    norm at the full LS solution if n>p or the minimum L1 norm linear
+#'                    interpolation solution if n<=p. Mode="norm" means s refers to the L1 norm
+#'                    of the coefficient vector. Mode="lambda" uses the lasso regularization
 #'                    parameter for s. Abbreviations allowed.
-#' @param studentize  If true, ResidLevPlot studentizes the residual. 
+#' @param studentize  If true, ResidLevPlot studentizes the residual.
 #' @return A plot includes all observations. X axis: leverage(when w=1), Y axis: residuals
 #' @description Each point in the plot represents a observation and its size indicates its case influence for the lasso.
-#'      Observations that are identified as influential points (having case influence greater than the threshold) is marked in red. 
+#'      Observations that are identified as influential points (having case influence greater than the threshold) is marked in red.
 #' @examples
 #' library(lars)
 #' data(diabetes)
 #' attach(diabetes)
 #' ResidLevPlot(x,y,1,'lambda', FALSE)
 #' detach(diabetes)
-#' 
+#'
 #' x = matrix(rnorm(50*200),nrow=50)
 #' y = x[,1:5]%*%c(5,4,3,2,1) + rnorm(50)
 #' ResidLevPlot(x,y,0.7)
+#' rm(x); rm(y)
 #' @export
 ResidLevPlot <- function(X, y, s, mode = c("fraction", "norm", "lambda"), studentize = TRUE){
   mode <- match.arg(mode)
